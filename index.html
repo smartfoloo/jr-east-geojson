@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JR East GeoJSON Downloads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", "Hiragino Sans", system-ui, sans-serif;
+    background: #EDF2F7;
+    color: #1A202C;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: #3182CE; text-decoration: none; }
+  a:hover { color: #2B6CB0; text-decoration: underline; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 9px; border: 2px solid #fff; }
+
+  .wrap { min-height: 100vh; padding: 40px 20px 60px; }
+
+  .app {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .map-panel {
+    flex: 0 0 340px;
+    position: sticky;
+    top: 20px;
+    height: 640px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .10), 0 8px 10px -6px rgba(0, 0, 0, .04);
+    overflow: hidden;
+  }
+  .map-panel svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #F7FAFC;
+  }
+  .map-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.5px;
+    opacity: .85;
+    transition: opacity .15s ease, stroke-width .15s ease;
+  }
+  .map-line.dim { opacity: .18; }
+  .map-line.hot { opacity: 1; stroke-width: 4.5px; }
+  .map-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-size: 13px;
+    color: #A0AEC0;
+  }
+
+  .content { flex: 1; min-width: 0; }
+
+  header { margin: 0 0 34px; text-align: left; }
+  .title {
+    font-family: "Libre Baskerville", serif;
+    font-size: 24px;
+    line-height: 1.1;
+    color: #1A202C;
+    letter-spacing: -0.5px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: #4A5568;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 860px) {
+    .app { flex-direction: column; }
+    .map-panel { position: static; width: 100%; height: 280px; flex: none; }
+  }
+  .lang-picker {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 50;
+  }
+  .lang-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #4A5568;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+  }
+  .lang-btn:hover { background: #E2E8F0; }
+  .lang-btn:active { transform: translateY(1px); }
+  .lang-btn svg { pointer-events: none; }
+
+  .lang-menu {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    min-width: 140px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .18), 0 8px 10px -6px rgba(0, 0, 0, .10);
+    padding: 5px;
+    opacity: 0;
+    transform: translateY(-4px) scale(.97);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: opacity .14s cubic-bezier(.16,1,.3,1), transform .14s cubic-bezier(.16,1,.3,1);
+  }
+  .lang-menu.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .lang-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-weight: 500;
+    font-size: 13.5px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: transparent;
+    color: #4A5568;
+    text-align: left;
+  }
+  .lang-option:hover { background: #E2E8F0; }
+  .lang-option.active { color: #3182CE; font-weight: 600; }
+  .lang-option .check { opacity: 0; color: #3182CE; }
+  .lang-option.active .check { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lang-menu { transition: none; }
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .count {
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-size: 13px;
+    color: #718096;
+  }
+  .download-all {
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: 1px solid #3182CE;
+    background: #3182CE;
+    color: #fff;
+    cursor: pointer;
+    transition: background .12s ease, transform .12s ease;
+  }
+  .download-all:hover { background: #2B6CB0; }
+  .download-all:active { transform: translateY(1px); }
+
+  .list {
+    background: transparent;
+    border-top: 1px solid #E2E8F0;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px;
+    border-bottom: 1px solid #E2E8F0;
+    opacity: 0;
+    transform: translateY(4px);
+    animation: reveal .4s cubic-bezier(.16, 1, .3, 1) forwards;
+  }
+  @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
+
+  .item-swatch {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .item-names { flex: 1; min-width: 0; }
+  .item-primary {
+    font-family: "Libre Baskerville", "Hiragino Sans", serif;
+    font-size: 14px;
+    color: #1A202C;
+    letter-spacing: -0.2px;
+    overflow-wrap: break-word;
+  }
+
+  .item-meta {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hexpill {
+    font-family: "Inter", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: #fff;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .filesize {
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-size: 11.5px;
+    color: #A0AEC0;
+    white-space: nowrap;
+  }
+  .btn-download {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #4A5568;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+  }
+  .btn-download:hover { background: #E2E8F0; text-decoration: none; }
+  .btn-download:active { transform: translateY(1px); }
+  .btn-download svg { flex: 0 0 auto; pointer-events: none; }
+
+  .state-msg {
+    text-align: center;
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-size: 14px;
+    color: #718096;
+    padding: 40px 0;
+  }
+
+  footer {
+    margin: 40px 0 0;
+    text-align: left;
+    font-family: "Inter", "Hiragino Sans", sans-serif;
+    font-size: 12px;
+    color: #A0AEC0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { animation: none; opacity: 1; transform: none; }
+    .btn-download, .download-all { transition: none; }
+  }
+
+  /* Japanese uses Hiragino Sans throughout, including the serif title. */
+  body.lang-ja, body.lang-ja * {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif !important;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lang-picker">
+    <button class="lang-btn" id="langBtn" aria-haspopup="true" aria-expanded="false" aria-label="Language">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+      </svg>
+    </button>
+    <div class="lang-menu" id="langMenu">
+      <button class="lang-option" id="langJa">
+        <span>日本語</span><span class="check">✓</span>
+      </button>
+      <button class="lang-option" id="langEn">
+        <span>English</span><span class="check">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="map-panel">
+      <svg id="mapSvg" viewBox="0 0 320 640" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="map-state" id="mapState">読み込み中…</div>
+    </aside>
+
+    <div class="content">
+      <header>
+        <div class="title" id="pageTitle">JR East GeoJSON</div>
+        <div class="subtitle" id="pageSub">路線ごとの GeoJSON ファイルをダウンロードできます</div>
+      </header>
+
+      <main>
+        <div class="toolbar">
+          <span class="count" id="lineCount"></span>
+          <button class="download-all" id="downloadAll">
+            <span id="downloadAllLabel">すべてダウンロード</span>
+          </button>
+        </div>
+        <div class="list" id="grid">
+          <div class="state-msg" id="stateMsg">読み込み中…</div>
+        </div>
+      </main>
+
+      <footer id="footerNote">GeoJSON files are sourced from this repository.</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var FILES = [
+    'geojson/Yamanote.geojson',
+    'geojson/ChuoRapid.geojson',
+    'geojson/ChuoSobuLocal.geojson',
+    'geojson/KeihinTohokuNegishi.geojson',
+    'geojson/SaikyoKawagoe.geojson'
+  ];
+
+  // English names aren't present in the source GeoJSON (only `name` in Japanese
+  // and `color`), so we keep a small translation table keyed by file path.
+  var EN_NAMES = {
+    'geojson/Yamanote.geojson': 'Yamanote Line',
+    'geojson/ChuoRapid.geojson': 'Chuo Line (Rapid)',
+    'geojson/ChuoSobuLocal.geojson': 'Chuo-Sobu Line (Local)',
+    'geojson/KeihinTohokuNegishi.geojson': 'Keihin-Tohoku Negishi Line',
+    'geojson/SaikyoKawagoe.geojson': 'Saikyo-Kawagoe Line'
+  };
+
+  var STRINGS = {
+    ja: {
+      title: 'JR東日本GeoJSONダウンローダー',
+      sub: '路線ごとの GeoJSON ファイルをダウンロードできます',
+      downloadAll: 'すべてダウンロード',
+      download: 'ダウンロード',
+      loading: '読み込み中…',
+      error: '路線データの読み込みに失敗しました。',
+      footer: 'GeoJSON ファイルはこのリポジトリから提供されています。',
+      count: function (n) { return n + ' 路線'; }
+    },
+    en: {
+      title: 'JR East GeoJSON',
+      sub: 'Download the GeoJSON file for each railway line',
+      downloadAll: 'Download all',
+      download: 'Download',
+      loading: 'Loading…',
+      error: 'Failed to load line data.',
+      footer: 'GeoJSON files are sourced from this repository.',
+      count: function (n) { return n + ' lines'; }
+    }
+  };
+
+  var state = { lang: 'ja', lines: [] };
+  var mapPaths = {};
+
+  var els = {
+    title: document.getElementById('pageTitle'),
+    sub: document.getElementById('pageSub'),
+    langBtn: document.getElementById('langBtn'),
+    langMenu: document.getElementById('langMenu'),
+    langJa: document.getElementById('langJa'),
+    langEn: document.getElementById('langEn'),
+    grid: document.getElementById('grid'),
+    stateMsg: document.getElementById('stateMsg'),
+    mapSvg: document.getElementById('mapSvg'),
+    mapState: document.getElementById('mapState'),
+    count: document.getElementById('lineCount'),
+    downloadAll: document.getElementById('downloadAll'),
+    downloadAllLabel: document.getElementById('downloadAllLabel'),
+    footer: document.getElementById('footerNote')
+  };
+
+  function downloadIcon() {
+    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M12 4V15M12 15L7.5 10.5M12 15L16.5 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M4.5 17.5V18.5C4.5 19.6046 5.39543 20.5 6.5 20.5H17.5C18.6046 20.5 19.5 19.6046 19.5 18.5V17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+
+  function normalizeColor(c) {
+    if (!c) return '3182CE';
+    return c.charAt(0) === '#' ? c.slice(1) : c;
+  }
+
+  function readableTextColor(hex) {
+    var r = parseInt(hex.substr(0, 2), 16);
+    var g = parseInt(hex.substr(2, 2), 16);
+    var b = parseInt(hex.substr(4, 2), 16);
+    var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? '#1A202C' : '#FFFFFF';
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
+
+  function buildProjector(bounds, width, height, padding) {
+    var lngSpan = bounds.maxLng - bounds.minLng || 0.001;
+    var latSpan = bounds.maxLat - bounds.minLat || 0.001;
+    var midLat = (bounds.minLat + bounds.maxLat) / 2;
+    var xFactor = Math.cos(midLat * Math.PI / 180);
+    var effW = lngSpan * xFactor;
+    var effH = latSpan;
+    var availW = width - padding * 2;
+    var availH = height - padding * 2;
+    var scale = Math.min(availW / effW, availH / effH);
+    var drawW = effW * scale;
+    var drawH = effH * scale;
+    var offsetX = (width - drawW) / 2;
+    var offsetY = (height - drawH) / 2;
+    return function (lng, lat) {
+      return [
+        offsetX + (lng - bounds.minLng) * xFactor * scale,
+        offsetY + (bounds.maxLat - lat) * scale
+      ];
+    };
+  }
+
+  function renderMap(lines) {
+    var minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+    lines.forEach(function (line) {
+      line.coordinates.forEach(function (ls) {
+        ls.forEach(function (pt) {
+          if (pt[0] < minLng) minLng = pt[0];
+          if (pt[0] > maxLng) maxLng = pt[0];
+          if (pt[1] < minLat) minLat = pt[1];
+          if (pt[1] > maxLat) maxLat = pt[1];
+        });
+      });
+    });
+    var vb = els.mapSvg.viewBox.baseVal;
+    var width = vb && vb.width ? vb.width : 320;
+    var height = vb && vb.height ? vb.height : 640;
+    var project = buildProjector({ minLng: minLng, maxLng: maxLng, minLat: minLat, maxLat: maxLat }, width, height, 24);
+
+    var svgNs = 'http://www.w3.org/2000/svg';
+    while (els.mapSvg.firstChild) els.mapSvg.removeChild(els.mapSvg.firstChild);
+
+    lines.forEach(function (line) {
+      var d = line.coordinates.map(function (ls) {
+        return ls.map(function (pt, i) {
+          var p = project(pt[0], pt[1]);
+          return (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1);
+        }).join('');
+      }).join(' ');
+      var path = document.createElementNS(svgNs, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'map-line');
+      path.setAttribute('stroke', '#' + line.color);
+      path.setAttribute('data-file', line.file);
+      els.mapSvg.appendChild(path);
+    });
+
+    mapPaths = {};
+    Array.prototype.forEach.call(els.mapSvg.querySelectorAll('.map-line'), function (p) {
+      mapPaths[p.getAttribute('data-file')] = p;
+    });
+  }
+
+  function highlightLine(file) {
+    Object.keys(mapPaths).forEach(function (f) {
+      mapPaths[f].classList.toggle('hot', f === file);
+      mapPaths[f].classList.toggle('dim', !!file && f !== file);
+    });
+  }
+
+  function render() {
+    var t = STRINGS[state.lang];
+    document.documentElement.lang = state.lang;
+    document.body.classList.toggle('lang-ja', state.lang === 'ja');
+    els.title.textContent = t.title;
+    els.sub.textContent = t.sub;
+    els.downloadAllLabel.textContent = t.downloadAll;
+    els.footer.textContent = t.footer;
+    els.langJa.classList.toggle('active', state.lang === 'ja');
+    els.langEn.classList.toggle('active', state.lang === 'en');
+
+    if (!state.lines.length) {
+      els.grid.innerHTML = '<div class="state-msg">' + (state.error ? t.error : t.loading) + '</div>';
+      els.count.textContent = '';
+      return;
+    }
+
+    els.count.textContent = t.count(state.lines.length);
+
+    els.grid.innerHTML = state.lines.map(function (line, i) {
+      var hex = '#' + line.color;
+      var textColor = readableTextColor(line.color);
+      var primary = state.lang === 'ja' ? line.jaName : line.enName;
+      return '' +
+        '<div class="list-item" data-file="' + line.file + '" style="animation-delay:' + (i * 40) + 'ms">' +
+          '<span class="item-swatch" style="background:' + hex + '"></span>' +
+          '<div class="item-names">' +
+            '<div class="item-primary">' + primary + '</div>' +
+          '</div>' +
+          '<div class="item-meta">' +
+            '<span class="filesize">' + formatSize(line.bytes) + '</span>' +
+            '<span class="hexpill" style="background:' + hex + ';color:' + textColor + '">' + hex.toUpperCase() + '</span>' +
+          '</div>' +
+          '<a class="btn-download" href="' + line.file + '" download="' + line.file.split('/').pop() + '" aria-label="' + t.download + '" title="' + t.download + '">' +
+            downloadIcon() +
+          '</a>' +
+        '</div>';
+    }).join('');
+  }
+
+  function setLang(lang) {
+    closeMenu();
+    if (state.lang === lang) return;
+    state.lang = lang;
+    render();
+  }
+
+  function openMenu() {
+    els.langMenu.classList.add('open');
+    els.langBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    els.langMenu.classList.remove('open');
+    els.langBtn.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    if (els.langMenu.classList.contains('open')) closeMenu();
+    else openMenu();
+  }
+
+  els.langBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    toggleMenu();
+  });
+  document.addEventListener('click', function (e) {
+    if (!els.langMenu.contains(e.target) && e.target !== els.langBtn) closeMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  els.langJa.addEventListener('click', function () { setLang('ja'); });
+  els.langEn.addEventListener('click', function () { setLang('en'); });
+
+  els.grid.addEventListener('mouseover', function (e) {
+    var item = e.target.closest && e.target.closest('.list-item');
+    if (item) highlightLine(item.getAttribute('data-file'));
+  });
+  els.grid.addEventListener('mouseout', function (e) {
+    var item = e.target.closest && e.target.closest('.list-item');
+    var to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.list-item');
+    if (item && item !== to) highlightLine(null);
+  });
+
+  els.downloadAll.addEventListener('click', function () {
+    state.lines.forEach(function (line, i) {
+      setTimeout(function () {
+        var a = document.createElement('a');
+        a.href = line.file;
+        a.download = line.file.split('/').pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 250);
+    });
+  });
+
+  Promise.all(FILES.map(function (file) {
+    return fetch(file)
+      .then(function (res) {
+        if (!res.ok) throw new Error('Failed to fetch ' + file);
+        return res.text();
+      })
+      .then(function (text) {
+        var bytes = new Blob([text]).size;
+        var data = JSON.parse(text);
+        var feature = data.features && data.features[0];
+        var props = (feature && feature.properties) || {};
+        var geometry = (feature && feature.geometry) || {};
+        var coordinates = geometry.type === 'MultiLineString' ? geometry.coordinates
+          : geometry.type === 'LineString' ? [geometry.coordinates] : [];
+        return {
+          file: file,
+          jaName: props.name || file,
+          enName: EN_NAMES[file] || props.name || file,
+          color: normalizeColor(props.color),
+          bytes: bytes,
+          coordinates: coordinates
+        };
+      });
+  }))
+    .then(function (lines) {
+      state.lines = lines;
+      render();
+      renderMap(lines);
+      els.mapState.style.display = 'none';
+    })
+    .catch(function (err) {
+      console.error(err);
+      state.error = true;
+      render();
+      els.mapState.textContent = STRINGS[state.lang].error;
+    });
+
+  render();
+})();
+</script>
+</body>
+</html>
