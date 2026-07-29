@@ -339,23 +339,8 @@
 
 <script>
 (function () {
-  var FILES = [
-    'geojson/Yamanote.geojson',
-    'geojson/ChuoRapid.geojson',
-    'geojson/ChuoSobuLocal.geojson',
-    'geojson/KeihinTohokuNegishi.geojson',
-    'geojson/SaikyoKawagoe.geojson'
-  ];
-
-  // English names aren't present in the source GeoJSON (only `name` in Japanese
-  // and `color`), so we keep a small translation table keyed by file path.
-  var EN_NAMES = {
-    'geojson/Yamanote.geojson': 'Yamanote Line',
-    'geojson/ChuoRapid.geojson': 'Chuo Line (Rapid)',
-    'geojson/ChuoSobuLocal.geojson': 'Chuo-Sobu Line (Local)',
-    'geojson/KeihinTohokuNegishi.geojson': 'Keihin-Tohoku Negishi Line',
-    'geojson/SaikyoKawagoe.geojson': 'Saikyo-Kawagoe Line'
-  };
+  var GEOJSON_DIR = 'geojson/';
+  var MANIFEST_URL = GEOJSON_DIR + 'manifest.json';
 
   var STRINGS = {
     ja: {
@@ -592,7 +577,15 @@
     });
   });
 
-  Promise.all(FILES.map(function (file) {
+  function geometryToLineStrings(geometry) {
+    if (!geometry) return [];
+    if (geometry.type === 'MultiLineString') return geometry.coordinates;
+    if (geometry.type === 'LineString') return [geometry.coordinates];
+    return [];
+  }
+
+  function loadLine(filename) {
+    var file = GEOJSON_DIR + filename;
     return fetch(file)
       .then(function (res) {
         if (!res.ok) throw new Error('Failed to fetch ' + file);
@@ -601,21 +594,31 @@
       .then(function (text) {
         var bytes = new Blob([text]).size;
         var data = JSON.parse(text);
-        var feature = data.features && data.features[0];
-        var props = (feature && feature.properties) || {};
-        var geometry = (feature && feature.geometry) || {};
-        var coordinates = geometry.type === 'MultiLineString' ? geometry.coordinates
-          : geometry.type === 'LineString' ? [geometry.coordinates] : [];
+        var features = data.features || [];
+        var props = (features[0] && features[0].properties) || {};
+        var coordinates = features.reduce(function (acc, feature) {
+          return acc.concat(geometryToLineStrings(feature.geometry));
+        }, []);
         return {
           file: file,
-          jaName: props.name || file,
-          enName: EN_NAMES[file] || props.name || file,
+          id: props.id || filename,
+          jaName: props.ja || props.id || filename,
+          enName: props.en || props.id || filename,
           color: normalizeColor(props.color),
           bytes: bytes,
           coordinates: coordinates
         };
       });
-  }))
+  }
+
+  fetch(MANIFEST_URL)
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to fetch ' + MANIFEST_URL);
+      return res.json();
+    })
+    .then(function (filenames) {
+      return Promise.all(filenames.map(loadLine));
+    })
     .then(function (lines) {
       state.lines = lines;
       render();
