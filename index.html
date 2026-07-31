@@ -4,15 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JR East GeoJSON Downloads</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Inter", "Hiragino Sans", system-ui, sans-serif;
-    background: #EDF2F7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", Roboto, Helvetica, Arial, sans-serif;
+    background: #F7FAFC;
     color: #1A202C;
     -webkit-font-smoothing: antialiased;
   }
@@ -21,79 +18,15 @@
   ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 9px; border: 2px solid #fff; }
 
-  .wrap { min-height: 100vh; padding: 40px 20px 60px; }
-
-  .app {
-    display: flex;
-    align-items: flex-start;
-    gap: 28px;
-    max-width: 1120px;
-    margin: 0 auto;
+  button, a { font-family: inherit; }
+  button:focus-visible, a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, .6);
+    border-radius: 6px;
   }
 
-  .map-panel {
-    flex: 0 0 340px;
-    position: sticky;
-    top: 20px;
-    height: 640px;
-    background: #fff;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .10), 0 8px 10px -6px rgba(0, 0, 0, .04);
-    overflow: hidden;
-  }
-  .map-panel svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #F7FAFC;
-  }
-  .map-line {
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 2.5px;
-    opacity: .85;
-    transition: opacity .15s ease, stroke-width .15s ease;
-  }
-  .map-line.dim { opacity: .18; }
-  .map-line.hot { opacity: 1; stroke-width: 4.5px; }
-  .map-state {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    font-family: "Inter", "Hiragino Sans", sans-serif;
-    font-size: 13px;
-    color: #A0AEC0;
-  }
+  .wrap { min-height: 100vh; padding: 32px 20px 48px; }
 
-  .content { flex: 1; min-width: 0; }
-
-  header { margin: 0 0 34px; text-align: left; }
-  .title {
-    font-family: "Libre Baskerville", serif;
-    font-size: 24px;
-    line-height: 1.1;
-    color: #1A202C;
-    letter-spacing: -0.5px;
-    text-wrap: balance;
-  }
-  .subtitle {
-    font-family: "Inter", "Hiragino Sans", sans-serif;
-    font-weight: 500;
-    font-size: 17px;
-    color: #4A5568;
-    margin-top: 10px;
-  }
-
-  @media (max-width: 860px) {
-    .app { flex-direction: column; }
-    .map-panel { position: static; width: 100%; height: 280px; flex: none; }
-  }
   .lang-picker {
     position: fixed;
     top: 20px;
@@ -101,9 +34,9 @@
     z-index: 50;
   }
   .lang-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
     border: 1px solid transparent;
     background: transparent;
     color: #4A5568;
@@ -111,22 +44,22 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    transition: background .12s ease;
   }
-  .lang-btn:hover { background: #E2E8F0; }
-  .lang-btn:active { transform: translateY(1px); }
+  .lang-btn:hover { background: #EDF2F7; }
+  .lang-btn:active { background: #E2E8F0; }
   .lang-btn svg { pointer-events: none; }
 
   .lang-menu {
     position: absolute;
-    top: 46px;
+    top: 42px;
     right: 0;
-    min-width: 140px;
+    min-width: 152px;
     background: #fff;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .18), 0 8px 10px -6px rgba(0, 0, 0, .10);
-    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -2px rgba(0, 0, 0, .05);
+    padding: 6px;
     opacity: 0;
     transform: translateY(-4px) scale(.97);
     transform-origin: top right;
@@ -144,19 +77,19 @@
     justify-content: space-between;
     gap: 10px;
     width: 100%;
-    font-family: "Inter", "Hiragino Sans", sans-serif;
     font-weight: 500;
-    font-size: 13.5px;
+    font-size: 14px;
     padding: 8px 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     background: transparent;
     color: #4A5568;
     text-align: left;
   }
-  .lang-option:hover { background: #E2E8F0; }
-  .lang-option.active { color: #3182CE; font-weight: 600; }
+  .lang-option:hover { background: #EDF2F7; }
+  .lang-option:active { background: #E2E8F0; }
+  .lang-option.active { color: #2B6CB0; font-weight: 600; }
   .lang-option .check { opacity: 0; color: #3182CE; }
   .lang-option.active .check { opacity: 1; }
 
@@ -164,92 +97,166 @@
     .lang-menu { transition: none; }
   }
 
+  .page-header { max-width: 1120px; margin: 0 auto 24px; }
+  .title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1A202C;
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: #718096;
+    margin-top: 4px;
+  }
+
+  .app {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .1), 0 1px 2px rgba(0, 0, 0, .06);
+  }
+
+  .map-card {
+    flex: 0 0 320px;
+    position: sticky;
+    top: 20px;
+    height: 600px;
+    overflow: hidden;
+  }
+  .map-card svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #F7FAFC;
+  }
+  .map-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.5px;
+    opacity: .85;
+    transition: opacity .15s ease, stroke-width .15s ease;
+  }
+  .map-line.dim { opacity: .15; }
+  .map-line.hot { opacity: 1; stroke-width: 4.5px; }
+  .map-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    color: #A0AEC0;
+  }
+
+  .content-card { flex: 1; min-width: 0; overflow: hidden; }
+
   .toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #E2E8F0;
     flex-wrap: wrap;
   }
   .count {
-    font-family: "Inter", "Hiragino Sans", sans-serif;
     font-size: 13px;
     color: #718096;
   }
   .download-all {
-    font-family: "Inter", "Hiragino Sans", sans-serif;
     font-weight: 600;
-    font-size: 13px;
-    padding: 9px 16px;
-    border-radius: 9px;
-    border: 1px solid #3182CE;
+    font-size: 14px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 6px;
+    border: 1px solid transparent;
     background: #3182CE;
     color: #fff;
     cursor: pointer;
-    transition: background .12s ease, transform .12s ease;
+    transition: background .15s ease;
   }
   .download-all:hover { background: #2B6CB0; }
-  .download-all:active { transform: translateY(1px); }
+  .download-all:active { background: #2C5282; }
 
-  .list {
-    background: transparent;
-    border-top: 1px solid #E2E8F0;
-  }
-
-  .list-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 4px;
-    border-bottom: 1px solid #E2E8F0;
-    opacity: 0;
-    transform: translateY(4px);
-    animation: reveal .4s cubic-bezier(.16, 1, .3, 1) forwards;
-  }
-  @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
-
-  .item-swatch {
-    flex: 0 0 auto;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-  }
-  .item-names { flex: 1; min-width: 0; }
-  .item-primary {
-    font-family: "Libre Baskerville", "Hiragino Sans", serif;
+  .table-scroll { overflow-x: auto; }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 14px;
-    color: #1A202C;
-    letter-spacing: -0.2px;
-    overflow-wrap: break-word;
   }
-
-  .item-meta {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .hexpill {
-    font-family: "Inter", monospace;
+  .table thead th {
+    text-align: left;
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .02em;
-    color: #fff;
-    padding: 3px 9px;
-    border-radius: 999px;
-  }
-  .filesize {
-    font-family: "Inter", "Hiragino Sans", sans-serif;
-    font-size: 11.5px;
-    color: #A0AEC0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #718096;
+    padding: 10px 20px;
+    border-bottom: 1px solid #E2E8F0;
     white-space: nowrap;
   }
-  .btn-download {
+  .table tbody td {
+    padding: 12px 20px;
+    border-bottom: 1px solid #EDF2F7;
+    vertical-align: middle;
+  }
+  .table tbody tr:last-child td { border-bottom: none; }
+  .table tbody tr.row {
+    transition: background .12s ease;
+    opacity: 0;
+    transform: translateY(2px);
+    animation: reveal .3s cubic-bezier(.16, 1, .3, 1) forwards;
+  }
+  .table tbody tr.row:hover { background: #F7FAFC; }
+  @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
+
+  .line-flex { display: flex; align-items: center; gap: 10px; }
+  .item-swatch {
     flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+  }
+  .item-primary {
+    color: #1A202C;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .hexpill {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .cell-size {
+    color: #718096;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .cell-action { text-align: right; }
+  .btn-download {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     border: 1px solid transparent;
     background: transparent;
     color: #4A5568;
@@ -257,36 +264,41 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    transition: background .12s ease;
   }
-  .btn-download:hover { background: #E2E8F0; text-decoration: none; }
-  .btn-download:active { transform: translateY(1px); }
-  .btn-download svg { flex: 0 0 auto; pointer-events: none; }
+  .btn-download:hover { background: #EDF2F7; text-decoration: none; }
+  .btn-download:active { background: #E2E8F0; }
+  .btn-download svg { pointer-events: none; }
 
   .state-msg {
     text-align: center;
-    font-family: "Inter", "Hiragino Sans", sans-serif;
     font-size: 14px;
     color: #718096;
-    padding: 40px 0;
+    padding: 40px 0 !important;
+    border-bottom: none !important;
   }
 
   footer {
-    margin: 40px 0 0;
+    max-width: 1120px;
+    margin: 24px auto 0;
     text-align: left;
-    font-family: "Inter", "Hiragino Sans", sans-serif;
     font-size: 12px;
     color: #A0AEC0;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .card { animation: none; opacity: 1; transform: none; }
-    .btn-download, .download-all { transition: none; }
+  @media (max-width: 860px) {
+    .app { flex-direction: column; align-items: stretch; }
+    .map-card { position: static; width: 100%; height: 260px; flex: none; }
   }
 
-  /* Japanese uses Hiragino Sans throughout, including the serif title. */
+  @media (prefers-reduced-motion: reduce) {
+    .table tbody tr.row { animation: none; opacity: 1; transform: none; }
+    .btn-download, .download-all, .lang-btn { transition: none; }
+  }
+
+  /* Japanese uses Hiragino Sans throughout. */
   body.lang-ja, body.lang-ja * {
-    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif !important;
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, sans-serif !important;
   }
 </style>
 </head>
@@ -308,33 +320,43 @@
     </div>
   </div>
 
+  <div class="page-header">
+    <div class="title" id="pageTitle">JR East GeoJSON</div>
+    <div class="subtitle" id="pageSub">路線ごとの GeoJSON ファイルをダウンロードできます</div>
+  </div>
+
   <div class="app">
-    <aside class="map-panel">
-      <svg id="mapSvg" viewBox="0 0 320 640" preserveAspectRatio="xMidYMid meet"></svg>
+    <aside class="card map-card">
+      <svg id="mapSvg" viewBox="0 0 320 600" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="map-state" id="mapState">読み込み中…</div>
     </aside>
 
-    <div class="content">
-      <header>
-        <div class="title" id="pageTitle">JR East GeoJSON</div>
-        <div class="subtitle" id="pageSub">路線ごとの GeoJSON ファイルをダウンロードできます</div>
-      </header>
-
-      <main>
-        <div class="toolbar">
-          <span class="count" id="lineCount"></span>
-          <button class="download-all" id="downloadAll">
-            <span id="downloadAllLabel">すべてダウンロード</span>
-          </button>
-        </div>
-        <div class="list" id="grid">
-          <div class="state-msg" id="stateMsg">読み込み中…</div>
-        </div>
-      </main>
-
-      <footer id="footerNote">GeoJSON files are sourced from this repository.</footer>
-    </div>
+    <section class="card content-card">
+      <div class="toolbar">
+        <span class="count" id="lineCount"></span>
+        <button class="download-all" id="downloadAll">
+          <span id="downloadAllLabel">すべてダウンロード</span>
+        </button>
+      </div>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th id="colLine">路線</th>
+              <th id="colColor">カラー</th>
+              <th id="colSize">サイズ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="grid">
+            <tr><td class="state-msg" colspan="4" id="stateMsg">読み込み中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
+
+  <footer id="footerNote">GeoJSON files are sourced from this repository.</footer>
 </div>
 
 <script>
@@ -351,7 +373,10 @@
       loading: '読み込み中…',
       error: '路線データの読み込みに失敗しました。',
       footer: 'GeoJSON ファイルはこのリポジトリから提供されています。',
-      count: function (n) { return n + ' 路線'; }
+      count: function (n) { return n + ' 路線'; },
+      colLine: '路線',
+      colColor: 'カラー',
+      colSize: 'サイズ'
     },
     en: {
       title: 'JR East GeoJSON',
@@ -361,7 +386,10 @@
       loading: 'Loading…',
       error: 'Failed to load line data.',
       footer: 'GeoJSON files are sourced from this repository.',
-      count: function (n) { return n + ' lines'; }
+      count: function (n) { return n + ' lines'; },
+      colLine: 'Line',
+      colColor: 'Color',
+      colSize: 'Size'
     }
   };
 
@@ -376,7 +404,9 @@
     langJa: document.getElementById('langJa'),
     langEn: document.getElementById('langEn'),
     grid: document.getElementById('grid'),
-    stateMsg: document.getElementById('stateMsg'),
+    colLine: document.getElementById('colLine'),
+    colColor: document.getElementById('colColor'),
+    colSize: document.getElementById('colSize'),
     mapSvg: document.getElementById('mapSvg'),
     mapState: document.getElementById('mapState'),
     count: document.getElementById('lineCount'),
@@ -446,7 +476,7 @@
     });
     var vb = els.mapSvg.viewBox.baseVal;
     var width = vb && vb.width ? vb.width : 320;
-    var height = vb && vb.height ? vb.height : 640;
+    var height = vb && vb.height ? vb.height : 600;
     var project = buildProjector({ minLng: minLng, maxLng: maxLng, minLat: minLat, maxLat: maxLat }, width, height, 24);
 
     var svgNs = 'http://www.w3.org/2000/svg';
@@ -488,11 +518,14 @@
     els.sub.textContent = t.sub;
     els.downloadAllLabel.textContent = t.downloadAll;
     els.footer.textContent = t.footer;
+    els.colLine.textContent = t.colLine;
+    els.colColor.textContent = t.colColor;
+    els.colSize.textContent = t.colSize;
     els.langJa.classList.toggle('active', state.lang === 'ja');
     els.langEn.classList.toggle('active', state.lang === 'en');
 
     if (!state.lines.length) {
-      els.grid.innerHTML = '<div class="state-msg">' + (state.error ? t.error : t.loading) + '</div>';
+      els.grid.innerHTML = '<tr><td class="state-msg" colspan="4">' + (state.error ? t.error : t.loading) + '</td></tr>';
       els.count.textContent = '';
       return;
     }
@@ -504,19 +537,21 @@
       var textColor = readableTextColor(line.color);
       var primary = state.lang === 'ja' ? line.jaName : line.enName;
       return '' +
-        '<div class="list-item" data-file="' + line.file + '" style="animation-delay:' + (i * 40) + 'ms">' +
-          '<span class="item-swatch" style="background:' + hex + '"></span>' +
-          '<div class="item-names">' +
-            '<div class="item-primary">' + primary + '</div>' +
-          '</div>' +
-          '<div class="item-meta">' +
-            '<span class="filesize">' + formatSize(line.bytes) + '</span>' +
-            '<span class="hexpill" style="background:' + hex + ';color:' + textColor + '">' + hex.toUpperCase() + '</span>' +
-          '</div>' +
-          '<a class="btn-download" href="' + line.file + '" download="' + line.file.split('/').pop() + '" aria-label="' + t.download + '" title="' + t.download + '">' +
-            downloadIcon() +
-          '</a>' +
-        '</div>';
+        '<tr class="row" data-file="' + line.file + '" style="animation-delay:' + (i * 30) + 'ms">' +
+          '<td>' +
+            '<span class="line-flex">' +
+              '<span class="item-swatch" style="background:' + hex + '"></span>' +
+              '<span class="item-primary">' + primary + '</span>' +
+            '</span>' +
+          '</td>' +
+          '<td><span class="hexpill" style="background:' + hex + ';color:' + textColor + '">' + hex.toUpperCase() + '</span></td>' +
+          '<td class="cell-size">' + formatSize(line.bytes) + '</td>' +
+          '<td class="cell-action">' +
+            '<a class="btn-download" href="' + line.file + '" download="' + line.file.split('/').pop() + '" aria-label="' + t.download + '" title="' + t.download + '">' +
+              downloadIcon() +
+            '</a>' +
+          '</td>' +
+        '</tr>';
     }).join('');
   }
 
@@ -555,13 +590,13 @@
   els.langEn.addEventListener('click', function () { setLang('en'); });
 
   els.grid.addEventListener('mouseover', function (e) {
-    var item = e.target.closest && e.target.closest('.list-item');
-    if (item) highlightLine(item.getAttribute('data-file'));
+    var row = e.target.closest && e.target.closest('.row');
+    if (row) highlightLine(row.getAttribute('data-file'));
   });
   els.grid.addEventListener('mouseout', function (e) {
-    var item = e.target.closest && e.target.closest('.list-item');
-    var to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.list-item');
-    if (item && item !== to) highlightLine(null);
+    var row = e.target.closest && e.target.closest('.row');
+    var to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.row');
+    if (row && row !== to) highlightLine(null);
   });
 
   els.downloadAll.addEventListener('click', function () {
